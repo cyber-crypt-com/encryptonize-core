@@ -69,7 +69,7 @@ data:
         }
 
         location / {
-          proxy_set_header X-Real-Ip $remote_addr;
+          grpc_set_header X-Real-Ip $remote_addr;
           grpc_pass grpc://encryptonize-service.encryptonize.svc.cluster.local:9000;
         }
         client_max_body_size 100M;
