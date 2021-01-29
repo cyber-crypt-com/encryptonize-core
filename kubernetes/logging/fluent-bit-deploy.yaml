@@ -114,7 +114,7 @@ data:
     function extract_headers(tag, timestamp, record)
         new_record = record         
         new_record["requestId"] = record["http_x_headers"][1]["HTTP_REQUEST_ID"]
-	new_record["remoteIP"] = record["http_x_headers"][1]["HTTP_X_REAL_IP"]
+        new_record["remoteIP"] = record["http_x_headers"][1]["HTTP_X_REAL_IP"]
 
         return 1, timestamp, new_record
     end
