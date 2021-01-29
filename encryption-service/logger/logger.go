@@ -22,8 +22,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 
 	"encryption-service/contextkeys"
 )
@@ -176,7 +176,7 @@ func UnaryIPInterceptor() grpc.UnaryServerInterceptor {
 		}
 
 		remoteIP := md["X-Real-Ip"]
-		
+
 		newCtx := context.WithValue(ctx, contextkeys.RemoteIPCtxKey, remoteIP)
 
 		return handler(newCtx, req)
@@ -187,16 +187,15 @@ func UnaryIPInterceptor() grpc.UnaryServerInterceptor {
 // propagated to subsequent calls for tracing purposes
 func StreamIPInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-
 		md, ok := metadata.FromIncomingContext(stream.Context())
 
 		if !ok {
-			status.Errorf(codes.DataLoss, "failed to get metadata")
+			return status.Errorf(codes.DataLoss, "failed to get metadata")
 		}
 
 		remoteIP := md["X-Real-Ip"]
 		newCtx := context.WithValue(stream.Context(), contextkeys.RemoteIPCtxKey, remoteIP)
-		
+
 		wrapped := grpc_middleware.WrapServerStream(stream)
 		wrapped.WrappedContext = newCtx
 		err := handler(srv, wrapped)
