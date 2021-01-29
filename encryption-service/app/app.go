@@ -33,7 +33,9 @@ import (
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health/grpc_health_v1"
+	status "google.golang.org/grpc/status"
 
 	"encryption-service/authn"
 	"encryption-service/authstorage"
@@ -233,8 +235,16 @@ func (app *App) initgRPC(port int) (*grpc.Server, net.Listener) {
 		log.Fatal(context.TODO(), msg, err)
 	}
 
+	// make gprc_recovery log panics and return generic errors to the caller
+	recoveryOpt := grpc_recovery.WithRecoveryHandlerContext(
+		func(ctx context.Context, p interface{}) error {
+			log.Error(ctx, "panic recovered", fmt.Errorf("panic: %v", p))
+			return status.Errorf(codes.Internal, "internal error")
+		},
+	)
+
 	unaryInterceptors := []grpc.UnaryServerInterceptor{
-		grpc_recovery.UnaryServerInterceptor(),
+		grpc_recovery.UnaryServerInterceptor(recoveryOpt),
 		log.UnaryRequestIDInterceptor(),
 		log.UnaryIPInterceptor(),
 		log.UnaryMethodNameInterceptor(),
@@ -242,7 +252,7 @@ func (app *App) initgRPC(port int) (*grpc.Server, net.Listener) {
 	}
 
 	streamInterceptors := []grpc.StreamServerInterceptor{
-		grpc_recovery.StreamServerInterceptor(),
+		grpc_recovery.StreamServerInterceptor(recoveryOpt),
 		log.StreamRequestIDInterceptor(),
 		log.StreamIPInterceptor(),
 		log.StreamMethodNameInterceptor(),
