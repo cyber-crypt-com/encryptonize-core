@@ -236,6 +236,7 @@ func (app *App) initgRPC(port int) (*grpc.Server, net.Listener) {
 	unaryInterceptors := []grpc.UnaryServerInterceptor{
 		grpc_recovery.UnaryServerInterceptor(),
 		log.UnaryRequestIDInterceptor(),
+		log.UnaryIPInterceptor(),
 		log.UnaryMethodNameInterceptor(),
 		log.UnaryLogInterceptor(),
 	}
@@ -243,6 +244,7 @@ func (app *App) initgRPC(port int) (*grpc.Server, net.Listener) {
 	streamInterceptors := []grpc.StreamServerInterceptor{
 		grpc_recovery.StreamServerInterceptor(),
 		log.StreamRequestIDInterceptor(),
+		log.StreamIPInterceptor(),
 		log.StreamMethodNameInterceptor(),
 		log.StreamLogInterceptor(),
 	}

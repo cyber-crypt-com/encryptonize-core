@@ -80,8 +80,8 @@ data:
     [FILTER]
         Name                lua
         Match               encryptonize.object-store.*
-        script              requestId-extractor.lua
-        call                extract_requestId
+        script              header-extractor.lua
+        call                extract_headers
 
     [FILTER]
         Name                kubernetes
@@ -110,10 +110,11 @@ data:
         Tls             On
         Tls.ca_path     /etc/certs/
 
-  requestId-extractor.lua : |
-    function extract_requestId(tag, timestamp, record)
+  header-extractor.lua : |
+    function extract_headers(tag, timestamp, record)
         new_record = record         
         new_record["requestId"] = record["http_x_headers"][1]["HTTP_REQUEST_ID"]
+	new_record["remoteIP"] = record["http_x_headers"][1]["HTTP_X_REAL_IP"]
 
         return 1, timestamp, new_record
     end
@@ -171,7 +172,7 @@ data:
     [PARSER]
         name       auth-store
         Format     regex
-        Regex      ^[^ ]+ [^ ]+[^\{]+\{(?<method>[^\}]+)\} \"(WITH request_id AS \(SELECT '(?<requestId>[a-zA-Z0-9-]+)')?[^\"]+\" \{[^\}]*\} [^ ]+ [^ ]+ (?<status>[^ ]+)
+        Regex      (?<level>^[^ ]+) [^ ]+ .+?client=(?<remoteIP>[^:]+).+?\{(?<method>[^\}]+)\} \"(WITH request_id AS \(SELECT '(?<requestId>[a-zA-Z0-9-]+)')?[^\"]+\" \{[^\}]*\} [^ ]+ [^ ]+ (?<status>[^ ]+)
 ---
 apiVersion: apps/v1
 kind: DaemonSet

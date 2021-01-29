@@ -9,7 +9,7 @@ data:
     [client]
     rgw_enable_ops_log = true
     rgw_ops_log_socket_path = /tmp/opslog
-    rgw_log_http_headers = "http_request_id"
+    rgw_log_http_headers = "http_request_id, http_x_real_ip"
 ---
 apiVersion: ceph.rook.io/v1
 kind: CephObjectStore

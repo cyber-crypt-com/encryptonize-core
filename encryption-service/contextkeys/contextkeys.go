@@ -23,4 +23,5 @@ const (
 	AuthStorageTxCtxKey
 	ObjectIDCtxKey
 	TargetIDCtxKey
+	RemoteIPCtxKey
 )

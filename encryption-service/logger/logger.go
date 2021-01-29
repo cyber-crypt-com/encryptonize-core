@@ -23,6 +23,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/metadata"
 
 	"encryption-service/contextkeys"
 )
@@ -71,6 +72,11 @@ func fieldsFromCtx(ctx context.Context) log.Fields {
 	targetID := ctx.Value(contextkeys.TargetIDCtxKey)
 	if targetID != nil {
 		fields["targetId"] = targetID
+	}
+
+	remoteIP := ctx.Value(contextkeys.RemoteIPCtxKey)
+	if remoteIP != nil {
+		fields["remoteIP"] = remoteIP
 	}
 
 	return fields
@@ -155,6 +161,45 @@ func StreamRequestIDInterceptor() grpc.StreamServerInterceptor {
 		wrapped := grpc_middleware.WrapServerStream(stream)
 		wrapped.WrappedContext = newCtx
 		err = handler(srv, wrapped)
+
+		return err
+	}
+}
+
+// UnaryIpInterceptor injects the IP address of the caller into the context
+func UnaryIPInterceptor() grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		md, ok := metadata.FromIncomingContext(ctx)
+
+		if !ok {
+			return nil, status.Errorf(codes.DataLoss, "failed to get metadata")
+		}
+
+		remoteIP := md["X-Real-Ip"]
+		
+		newCtx := context.WithValue(ctx, contextkeys.RemoteIPCtxKey, remoteIP)
+
+		return handler(newCtx, req)
+	}
+}
+
+// StreamIPIntercepto the remote IP address into the context
+// propagated to subsequent calls for tracing purposes
+func StreamIPInterceptor() grpc.StreamServerInterceptor {
+	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+
+		md, ok := metadata.FromIncomingContext(stream.Context())
+
+		if !ok {
+			status.Errorf(codes.DataLoss, "failed to get metadata")
+		}
+
+		remoteIP := md["X-Real-Ip"]
+		newCtx := context.WithValue(stream.Context(), contextkeys.RemoteIPCtxKey, remoteIP)
+		
+		wrapped := grpc_middleware.WrapServerStream(stream)
+		wrapped.WrappedContext = newCtx
+		err := handler(srv, wrapped)
 
 		return err
 	}
